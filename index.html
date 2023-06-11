@@ -1,0 +1,370 @@
+<html>
+
+<head>
+    <meta charset="UTF-8" />
+    <title>大富翁</title>
+	
+    <style>
+        body {
+            width: 1920px;
+            height: 1080px;
+            overflow: hidden;
+            background-image: url(images/bg-1.jpg);
+            background-size: contain;
+            background-position: center;
+            background-position-y: 0px; /* 向上偏移200px */
+        }
+
+        .dice {
+            width: 0 !important;
+            height: 0 !important;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .button img {
+            
+            height: 400px;
+            width: 200px;
+            position: absolute;
+            top: -20px;
+            left: 1320px;
+        }
+		
+		.button click{
+			 onclick="playSound()"
+		}
+
+        .object img {
+           
+            height: 600px;
+            width: 400px;
+        }
+
+        .result img {
+            
+            width: 250px;
+            display: none; /* 初始設置為隱藏 */
+            position: absolute;
+            top: 450px;
+            left: 30px;
+        }
+
+        .character img {
+            
+            height: 450px;
+            width: 300px;
+        }
+
+        .characterA img {
+            
+            height: 300px;
+            width: 250px;
+            transform: translate(950px, 505px)rotate(-7deg);
+        }
+.characterB img {
+            
+            height: 300px;
+            width: 250px;
+            transform: translate(1200px, 125px) rotate(-23deg);
+        }
+.characterc img {
+            
+            height: 300px;
+            width: 250px;
+            transform: translate(1450px, -250px)rotate(-10deg);
+        }
+
+        .characterE img {
+            
+            height: 300px;
+            width: 250px;
+            transform: translate(700px, -345px) rotate(-15deg);
+        }
+        .characterF img {
+            
+            height: 300px;
+            width: 250px;
+            transform: translate(450px,-560px) rotate(-15deg);
+        }
+		.characterG img {
+           
+            height: 300px;
+            width: 250px;
+            transform: translate(220px,-745px) rotate(-35deg);
+        }
+		.characterH img {
+            
+            height: 300px;
+            width: 250px;
+            transform: translate(1680px,-1315px) rotate(15deg);
+        }
+
+
+        .object {
+            position: absolute;
+            transform: translate(1470px, -1960px);
+        }
+
+        .slide-rotate {
+            animation: slide-rotate 1s linear;
+            animation-fill-mode: forwards;
+        }
+
+        @keyframes slide-rotate {
+            0% {
+                transform: translate(1300px, -2000px) rotate(0deg);
+            }
+            100% {
+                transform: translate(350px, -1650px) rotate(-360deg);
+            }
+        }
+
+        .character {
+            position: absolute;
+            transform: translate(910px, -1850px) rotate(-10deg);
+        }
+
+        .character.move {
+            animation: moveCharacter 0.7s linear forwards;
+        }
+
+        @keyframes moveCharacter {
+            0% {
+                transform: translate(910px, -1850px) rotate(-10deg)
+            }
+            50% {
+                transform: translate(910px, -2050px)rotate(-5deg)
+            }
+            100% {
+                transform: translate(910px, -1850px)rotate(-10deg)
+            }
+        }
+		.href{
+			transform: translate(1130px, -2010px) rotate(-43deg)
+		}
+		.href-1{
+			transform: translate(1150px, -2010px) rotate(-43deg)
+		}
+    </style>
+</head>
+
+<body>
+	<audio src="music/背景.mp3" autoplay loop></audio>
+	
+    <div class="characterA" id="characterA">
+        <img src="images/A-1.png" alt="角色A圖片">
+    </div>
+    <div class="characterB" id="characterB">
+        <img src="images/A-0.png" alt="角色B圖片">
+    </div>
+    <div class="characterC" id="characterC">
+        <img src="images/A--1.png" alt="角色C圖片">
+    </div>
+
+    <div class="characterE" id="characterE">
+        <img src="images/A-2.png" alt="角色E圖片">
+    </div>
+    <div class="characterF" id="characterF">
+        <img src="images/A-3.png" alt="角色F圖片">
+    </div>
+	<div class="characterG" id="characterG">
+        <img src="images/A-4.png" alt="角色G圖片">
+    </div>
+	<div class="characterH" id="characterH">
+        <img src="images/A--2.png" alt="角色H圖片">
+    </div>
+
+    <div class="dice" id="dice">
+        <div class="object">
+            <img src="images/Produce_AdobeExpress.gif" alt="物件圖片">
+        </div>
+    </div>
+    <div class="character" id="character">
+        <img src="images/角色.gif" alt="角色圖片">
+    </div> 
+    <div class="result" id="result">
+        <img src="placeholder.jpg" alt="結果圖片">
+    </div>
+    <div class="button" id="button">
+        <img src="images/按鈕-高.png" alt="按鈕圖片">
+    </div>
+	<div class="href">
+		<a href="參考資料.html">參考資料</a>
+	</div>
+	<div class="href-1">
+		<a href="GPT.html">操作說明</a>
+	</div>
+	
+	
+    <script>
+        var button = document.querySelector("#button");
+        var object = document.querySelector(".object");
+        var dice = document.querySelector("#dice");
+        var result = document.querySelector("#result");
+        var characterA = document.querySelector("#characterA");
+        var characterB = document.querySelector("#characterB");
+        var characterC = document.querySelector("#characterC");
+        var characterH = document.querySelector("#characterH");
+        var characterE = document.querySelector("#characterE");
+        var characterF = document.querySelector("#characterF");
+        var characterG = document.querySelector("#characterG");
+        var character = document.querySelector("#character");
+		
+        var currentImageCountA = 1;
+        var currentImageCountB = 0;
+        var currentImageCountC = -1;
+        var currentImageCountE = 2;
+        var currentImageCountF = 3;
+		var currentImageCountG = 4;
+        var currentImageCountH = -2;
+		
+
+        button.addEventListener("click", function () {
+			
+			const audio = new Audio("music/123.mp3");
+  			audio.play();
+			
+            var randomNum = Math.floor(Math.random() * 6) + 1;
+            dice.classList.add("rolling");
+            object.classList.add("slide-rotate");
+            button.querySelector("img").setAttribute("src", "images/按鈕.png" );
+
+            setTimeout(function () {
+                dice.classList.remove("rolling");
+                object.classList.remove("slide-rotate");
+                result.innerHTML = '<img src="images/' + randomNum + '.png" alt="結果圖片">';
+                result.firstChild.style.display = "block";
+
+                setTimeout(function () {
+                    var characterAnimationCount = randomNum;
+                    var currentAnimationCount = 0;
+
+                    function playCharacterAnimation() {
+                        if (currentAnimationCount >= characterAnimationCount) {
+                            characterA.classList.remove("move");
+                            characterB.classList.remove("move");
+                            characterC.classList.remove("move");
+
+                            characterE.classList.remove("move");
+                            characterF.classList.remove("move");
+							characterG.classList.remove("move");
+                            characterH.classList.remove("move");
+                            
+                            character.classList.remove("move");
+                    result.firstChild.style.display = "none";
+                            return;
+                        }
+                        character.classList.remove("move");
+                        
+                        characterA.classList.remove("move");
+                        characterA.style.setProperty("--move-count", currentImageCountA + "px");
+
+                        characterB.classList.remove("move");
+                        characterB.style.setProperty("--move-count", currentImageCountB + "px");
+
+                        characterC.classList.remove("move");
+                        characterC.style.setProperty("--move-count", currentImageCountC + "px");
+
+
+
+                        characterE.classList.remove("move");
+                        characterE.style.setProperty("--move-count", currentImageCountE + "px");
+
+                        characterF.classList.remove("move");
+                        characterF.style.setProperty("--move-count", currentImageCountF + "px");
+						characterG.classList.remove("move");
+                        characterG.style.setProperty("--move-count", currentImageCountG + "px");
+						characterH.classList.remove("move");
+                        characterH.style.setProperty("--move-count", currentImageCountH + "px");
+
+
+                        setTimeout(function () {
+                            character.classList.add("move");
+                            characterA.classList.add("move");
+                            characterB.classList.add("move");
+                            characterC.classList.add("move");
+                            
+                            characterE.classList.add("move");
+                            characterF.classList.add("move");
+							characterG.classList.add("move");
+                            characterH.classList.add("move");
+
+                            currentAnimationCount++;
+                            currentImageCountA++;
+                            currentImageCountB++;
+                            currentImageCountC++;
+                            currentImageCountE++;
+                            currentImageCountF++;
+							currentImageCountG++;
+                            currentImageCountH++;
+
+                            if (currentImageCountA > 10) {
+                                currentImageCountA = 1;
+                            }
+
+                            if (currentImageCountB > 10) {
+                                currentImageCountB = 1;
+                            }
+
+                            if (currentImageCountC > 10) {
+                                currentImageCountC = 1;
+                            }
+
+
+                            if (currentImageCountE > 10) {
+                                currentImageCountE = 1;
+                            }
+
+                            if (currentImageCountF > 10) {
+                                currentImageCountF = 1;
+                            }
+							if (currentImageCountG > 10) {
+                                currentImageCountG = 1;
+                            }
+							if (currentImageCountH > 10) {
+                                currentImageCountH = 1;
+                            }
+
+ 
+                            var newImageNameA = "A-" + currentImageCountA + ".png";
+                            characterA.querySelector("img").setAttribute("src", "images/" + newImageNameA);
+
+                            var newImageNameB = "A-" + currentImageCountB + ".png";
+                            characterB.querySelector("img").setAttribute("src", "images/" + newImageNameB);
+
+                            var newImageNameC = "A-" + currentImageCountC + ".png";
+                            characterC.querySelector("img").setAttribute("src", "images/" + newImageNameC);
+
+
+
+                            var newImageNameE = "A-" + currentImageCountE + ".png";
+                            characterE.querySelector("img").setAttribute("src", "images/" + newImageNameE);
+
+                            var newImageNameF = "A-" + currentImageCountF + ".png";
+                            characterF.querySelector("img").setAttribute("src", "images/" + newImageNameF);
+							var newImageNameG = "A-" + currentImageCountG + ".png";
+                            characterG.querySelector("img").setAttribute("src", "images/" + newImageNameG);
+
+                            var newImageNameH = "A-" + currentImageCountH + ".png";
+                            characterH.querySelector("img").setAttribute("src", "images/" + newImageNameH);
+
+
+                            document.body.style.backgroundImage = 'url(images/bg-' + currentImageCountA + '.jpg)';
+							
+							const audio = new Audio("music/789.mp3");
+  							audio.play();
+                        }, 200);
+                        button.querySelector("img").setAttribute("src", "images/按鈕-高.png" );
+                        setTimeout(playCharacterAnimation, 1000);
+                    }
+
+                    playCharacterAnimation();
+                }, 1500);
+            }, 1000);
+        });
+    </script>
+</body>
+
+</html>
