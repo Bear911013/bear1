@@ -1,0 +1,324 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8">
+  <title>聊天紀錄檢視器</title>
+  <style>
+    /* CSS 放這裡 */
+    body {
+      font-family: sans-serif;
+      background: #f8f8f8;
+      margin: 0;
+      padding: 20px;
+      -webkit-user-select: none;
+      user-select: none;
+    }
+    .controls {
+      position: fixed;
+      top: 10px;
+      right: 20px;
+      background: white;
+      padding: 10px;
+      border-radius: 8px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+      z-index: 1000;
+      max-width: 300px;
+      width: 100%;
+      box-sizing: border-box;
+    }
+    .search-bar {
+      display: none;
+      margin-top: 10px;
+    }
+    .search-bar input[type="text"] {
+      width: 120px;
+    }
+    .search-bar input[type="number"] {
+      width: 50px;
+    }
+    .chat-container {
+      margin-top: 160px;
+      padding: 20px;
+      max-width: 800px;
+      margin-left: auto;
+      margin-right: auto;
+    }
+    .chat-entry {
+      margin-bottom: 16px;
+      display: flex;
+      flex-direction: column;
+    }
+    .timestamp {
+      font-size: 12px;
+      color: gray;
+      margin-bottom: 2px;
+    }
+    .name-box {
+      background-color: #333;
+      color: white;
+      padding: 6px 12px;
+      border-radius: 6px 6px 0 0;
+      font-weight: bold;
+      width: fit-content;
+      max-width: 80%;
+    }
+    .text-box {
+      background-color: #f2f2f2;
+      padding: 12px;
+      border-radius: 0 0 6px 6px;
+      max-width: 80%;
+      white-space: pre-wrap;
+      word-wrap: break-word;
+      -webkit-user-select: text;
+      user-select: text;
+    }
+    .chat-entry.player {
+      align-items: flex-end;
+    }
+    .chat-entry.player .name-box {
+      background-color: #0066cc;
+    }
+    .chat-entry.player .text-box {
+      background-color: #d0e8ff;
+    }
+    .highlight {
+      background-color: yellow;
+    }
+    @media (max-width: 768px) {
+      .controls {
+        top: 10px;
+        right: 10px;
+        padding: 15px;
+        width: 100%;
+        max-width: none;
+        margin: 0;
+        border-radius: 5px;
+      }
+      .chat-container {
+        margin-top: 120px;
+        width: 100%;
+        padding: 10px;
+      }
+      .chat-entry .name-box {
+        max-width: 70%;
+      }
+      .chat-entry .text-box {
+        max-width: 70%;
+      }
+      .chat-entry {
+        margin-bottom: 12px;
+      }
+      .search-bar input[type="text"] {
+        width: 90px;
+      }
+    }
+    @media (max-width: 480px) {
+      .controls {
+        padding: 10px;
+        top: 0;
+        right: 0;
+        width: 100%;
+      }
+      .chat-container {
+        margin-top: 80px;
+        padding: 5px;
+      }
+      .chat-entry .name-box,
+      .chat-entry .text-box {
+        max-width: 100%;
+      }
+      .search-bar input[type="text"] {
+        width: 70px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="controls">
+    <label><input type="radio" name="filter" value="all" checked> 顯示全部</label><br>
+    <label><input type="radio" name="filter" value="character"> 只看角色</label><br>
+    <label><input type="radio" name="filter" value="player"> 只看玩家</label><br>
+    <input type="text" id="playerNameInput" placeholder="玩家"><br><br>
+    <input type="file" id="fileInput" accept=".txt"><br><br>
+    <button id="toggleSearch">🔍 查找</button>
+    <button id="downloadXlsx">下載 XLSX</button>
+    <div class="search-bar" id="searchBar">
+      <input type="text" id="searchInput" placeholder="搜尋對話">
+      <button id="prevBtn">⬆️</button>
+      <input type="number" id="matchIndexInput" value="1" min="1">
+      <span id="matchCountLabel">(共 0 筆)</span>
+      <button id="nextBtn">⬇️</button>
+    </div>
+  </div>
+
+  <div class="chat-container" id="chatContainer"></div>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.17.1/xlsx.full.min.js"></script>
+  <script>
+    // JavaScript 放這裡
+    const fileInput = document.getElementById('fileInput');
+// 檢查 localStorage 是否有記錄上一次的檔案
+window.addEventListener('load', () => {
+  const lastFileName = localStorage.getItem('lastFileName');
+  if (lastFileName) {
+    // 如果記錄了檔案名，顯示在選擇框中（並非所有瀏覽器支持顯示檔案名，僅在某些情況下可見）
+    console.log(`上次選擇的檔案是: ${lastFileName}`);
+  }
+});
+
+// 檢查用戶是否選擇了檔案
+fileInput.addEventListener('change', (e) => {
+  const file = e.target.files[0];
+  if (file) {
+    // 儲存檔案名稱到 localStorage
+    localStorage.setItem('lastFileName', file.name);
+  }
+});
+
+    const chatContainer = document.getElementById('chatContainer');
+    const playerNameInput = document.getElementById('playerNameInput');
+    const toggleSearchBtn = document.getElementById('toggleSearch');
+    const searchBar = document.getElementById('searchBar');
+    const searchInput = document.getElementById('searchInput');
+    const matchCountLabel = document.getElementById('matchCountLabel');
+    const matchIndexInput = document.getElementById('matchIndexInput');
+    const nextBtn = document.getElementById('nextBtn');
+    const prevBtn = document.getElementById('prevBtn');
+    const downloadXlsxBtn = document.getElementById('downloadXlsx');
+
+    let playerName = "玩家";
+    let allMessages = [];
+    let searchMatches = [];
+    let currentMatchIndex = 0;
+
+    playerNameInput.addEventListener('input', () => {
+      playerName = playerNameInput.value.trim() || "玩家";
+      renderChat();
+    });
+
+    fileInput.addEventListener('change', (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+      localStorage.setItem('lastFileName', file.name);
+      const reader = new FileReader();
+      reader.onload = function (e) {
+        const content = e.target.result;
+        const blocks = content.split(/\n(?=\[\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}\])/g);
+        allMessages = [];
+
+        blocks.forEach(block => {
+          const match = block.match(/^\[(.*?)\] (.*?):\s*([\s\S]*)$/);
+          if (match) {
+            const [, timestamp, name, text] = match;
+            allMessages.push({
+              timestamp: timestamp.trim(),
+              name: name.trim(),
+              text: text.trim()
+            });
+          }
+        });
+        renderChat();
+      };
+      reader.readAsText(file);
+    });
+
+    function renderChat() {
+      const filter = document.querySelector('input[name="filter"]:checked').value;
+      chatContainer.innerHTML = "";
+
+      allMessages.forEach((msg, index) => {
+        const isPlayer = msg.name === "undefined";
+        const displayName = isPlayer ? playerName : msg.name;
+        if ((filter === "character" && isPlayer) || (filter === "player" && !isPlayer)) return;
+
+        const entry = document.createElement("div");
+        entry.className = "chat-entry" + (isPlayer ? " player" : "");
+
+        const timestamp = document.createElement("div");
+        timestamp.className = "timestamp";
+        timestamp.textContent = msg.timestamp;
+
+        const nameBox = document.createElement("div");
+        nameBox.className = "name-box";
+        nameBox.textContent = displayName;
+
+        const textBox = document.createElement("div");
+        textBox.className = "text-box";
+        textBox.textContent = msg.text;
+        textBox.dataset.index = index;
+
+        entry.appendChild(timestamp);
+        entry.appendChild(nameBox);
+        entry.appendChild(textBox);
+        chatContainer.appendChild(entry);
+      });
+
+      highlightMatches();
+    }
+
+    toggleSearchBtn.addEventListener('click', () => {
+      searchBar.style.display = searchBar.style.display === 'block' ? 'none' : 'block';
+    });
+
+    searchInput.addEventListener('input', highlightMatches);
+    matchIndexInput.addEventListener('input', () => {
+      currentMatchIndex = parseInt(matchIndexInput.value) - 1;
+      scrollToCurrentMatch();
+    });
+    nextBtn.addEventListener('click', () => {
+      if (searchMatches.length === 0) return;
+      currentMatchIndex = (currentMatchIndex + 1) % searchMatches.length;
+      scrollToCurrentMatch();
+    });
+    prevBtn.addEventListener('click', () => {
+      if (searchMatches.length === 0) return;
+      currentMatchIndex = (currentMatchIndex - 1 + searchMatches.length) % searchMatches.length;
+      scrollToCurrentMatch();
+    });
+
+    function highlightMatches() {
+      searchMatches = [];
+      const keyword = searchInput.value.trim().toLowerCase();
+      if (!keyword) {
+        matchCountLabel.textContent = `(共 0 筆)`;
+        matchIndexInput.value = 1;
+        return;
+      }
+
+      const boxes = chatContainer.querySelectorAll('.text-box');
+      boxes.forEach((box, index) => {
+        const text = box.textContent;
+        box.innerHTML = text;
+        if (text.toLowerCase().includes(keyword)) {
+          const regex = new RegExp(`(${keyword})`, 'gi');
+          box.innerHTML = text.replace(regex, '<span class="highlight">$1</span>');
+          searchMatches.push(box);
+        }
+      });
+
+      matchCountLabel.textContent = `(共 ${searchMatches.length} 筆)`;
+      matchIndexInput.max = searchMatches.length || 1;
+      matchIndexInput.value = Math.min(currentMatchIndex + 1, searchMatches.length) || 1;
+
+      scrollToCurrentMatch();
+    }
+
+    function scrollToCurrentMatch() {
+      if (searchMatches.length === 0) return;
+      const match = searchMatches[currentMatchIndex];
+      match.scrollIntoView({ behavior: "smooth", block: "center" });
+    }
+
+    downloadXlsxBtn.addEventListener('click', () => {
+      const worksheetData = allMessages.map(msg => ({
+        時間: msg.timestamp,
+        發言者: msg.name === "undefined" ? playerName : msg.name,
+        對話內容: msg.text
+      }));
+      const worksheet = XLSX.utils.json_to_sheet(worksheetData);
+      const workbook = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(workbook, worksheet, "聊天紀錄");
+      XLSX.writeFile(workbook, "chatlog.xlsx");
+    });
+  </script>
+</body>
+</html>
